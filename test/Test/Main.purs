@@ -52,3 +52,7 @@ main = runSpecAndExitProcess [ consoleReporter ] do
         return incr(21);
         """
     test code $ IntVal 22
+
+  it "tuple" do
+    test "return (42, \"Hello\");"
+      $ TupleVal [ IntVal 42, StrVal "Hello" ]

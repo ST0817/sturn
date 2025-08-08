@@ -67,6 +67,8 @@ parseVarExpr = VarExpr
   <*> ident
 
 -- FuncExpr = "\\" Ident* "->" ( "{" Stmt* "}" ) | Expr
+--
+-- "\n -> n + 1" is desugared to "\n -> { return n + 1; }"
 parseFuncExpr :: SturnParser Expr
 parseFuncExpr = FuncExpr
   <$ reservedOp "\\"
@@ -78,12 +80,22 @@ parseFuncExpr = FuncExpr
   block = defer \_ -> tokenParser.braces $ many parseStmt
   singleExpr = defer \_ -> singleton <$> ReturnStmt <$> parseExpr
 
+-- TupleExpr = "(" ( Expr ( "," Expr )* )? ")"
+--
+-- Parenthesized expressions are parsed as tuples with a single element.
+-- Its elements are evaluated as a single expression during evaluation.
+parseTupleExpr :: SturnParser Expr
+parseTupleExpr = defer \_ -> TupleExpr
+  <$> fromFoldable
+  <$> tokenParser.parens (tokenParser.commaSep parseExpr)
+
 -- Term
 --   = IntLit
 --   | StrLit
 --   | NullLit
 --   | VarExpr
 --   | FuncExpr
+--   | TupleExpr
 parseTerm :: SturnParser Expr
 parseTerm = defer \_ -> choice
   [ parseIntLit
@@ -91,6 +103,7 @@ parseTerm = defer \_ -> choice
   , parseNullLit
   , parseVarExpr
   , parseFuncExpr
+  , parseTupleExpr
   ]
 
 -- AddExpr = Term ( "+" Term )+

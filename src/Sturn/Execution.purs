@@ -7,7 +7,7 @@ import Data.Array (length, zip)
 import Data.Either (Either(..))
 import Data.Map (insert, lookup, member)
 import Data.Maybe (Maybe(..))
-import Data.Traversable (traverse_)
+import Data.Traversable (traverse, traverse_)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Effect (Effect)
@@ -44,6 +44,10 @@ evaluate _ (StrLit str) = pure $ StrVal str
 evaluate _ NullLit = pure NullVal
 evaluate scope (VarExpr namePos name) =
   fst <$> findVar scope namePos name
+evaluate _ (FuncExpr params body) = pure $ FuncVal params body
+evaluate scope (TupleExpr [ elemExpr ]) = evaluate scope elemExpr
+evaluate scope (TupleExpr elemExprs) =
+  TupleVal <$> traverse (evaluate scope) elemExprs
 evaluate scope (AddExpr leftExpr opPos rightExpr) = do
   leftVal <- evaluate scope leftExpr
   rightVal <- evaluate scope rightExpr
@@ -51,7 +55,6 @@ evaluate scope (AddExpr leftExpr opPos rightExpr) = do
     IntVal leftInt, IntVal rightInt ->
       pure $ IntVal $ leftInt + rightInt
     _, _ -> throwError $ ParseError "Type missmatch." opPos
-evaluate _ (FuncExpr params body) = pure $ FuncVal params body
 evaluate scope (CallExpr calleeExpr parenStartPos argExprs) = do
   calleeVal <- evaluate scope calleeExpr
   case calleeVal of
@@ -64,7 +67,7 @@ evaluate scope (CallExpr calleeExpr parenStartPos argExprs) = do
       traverse_ defineParam $ zip params argExprs
       result <- runExceptT $ traverse_ (interpret scope') body
       case result of
-        Right _ -> pure $ IntVal 0 -- TODO: Dummy return value. Fix to unit.
+        Right _ -> pure $ TupleVal []
         Left returnVal -> pure returnVal
     FuncVal _ _ -> throwError
       $ ParseError "Number of arguments does not match." parenStartPos

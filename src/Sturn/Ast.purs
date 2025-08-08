@@ -8,6 +8,7 @@ data Expr
   | NullLit
   | VarExpr Position String
   | FuncExpr (Array String) (Array Stmt)
+  | TupleExpr (Array Expr)
   | AddExpr Expr Position Expr
   | CallExpr Expr Position (Array Expr)
 
