@@ -41,3 +41,6 @@ main = runSpecAndExitProcess [ consoleReporter ] do
         return foo;
         """
     test code $ IntVal 53
+
+  it "addition" do
+    test "return 42 + 53;" $ IntVal 95

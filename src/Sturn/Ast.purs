@@ -7,6 +7,7 @@ data Expr
   | StrLit String
   | NullLit
   | VarExpr Position String
+  | AddExpr Expr Position Expr
 
 data Stmt
   = ReturnStmt Expr

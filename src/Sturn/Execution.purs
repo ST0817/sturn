@@ -30,6 +30,13 @@ evaluate _ (StrLit str) = pure $ StrVal str
 evaluate _ NullLit = pure NullVal
 evaluate envRef (VarExpr namePos name) =
   getVar envRef namePos name
+evaluate envRef (AddExpr leftExpr opPos rightExpr) = do
+  leftVal <- evaluate envRef leftExpr
+  rightVal <- evaluate envRef rightExpr
+  case leftVal, rightVal of
+    IntVal leftInt, IntVal rightInt ->
+      pure $ IntVal $ leftInt + rightInt
+    _, _ -> throwError $ ParseError "Type missmatch." opPos
 
 type Interpreter = ExceptT Value Evaluator
 

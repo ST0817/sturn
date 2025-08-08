@@ -3,7 +3,7 @@ module Sturn.Parsing (parseProgram) where
 import Prelude
 
 import Parsing (Parser, position)
-import Parsing.Combinators (choice)
+import Parsing.Combinators (chainl1, choice)
 import Parsing.Combinators.Array (many)
 import Parsing.Language (emptyDef)
 import Parsing.String (eof)
@@ -58,18 +58,29 @@ parseVarExpr = VarExpr
   <$> position
   <*> ident
 
--- Expr
+-- Term
 --   = IntLit
 --   | StrLit
 --   | NullLit
 --   | VarExpr
-parseExpr :: SturnParser Expr
-parseExpr = choice
+parseTerm :: SturnParser Expr
+parseTerm = choice
   [ parseIntLit
   , parseStrLit
   , parseNullLit
   , parseVarExpr
   ]
+
+-- AddExpr = Term ( "+" Term )+
+parseAddExpr :: SturnParser Expr
+parseAddExpr = chainl1 parseTerm $ do
+  opPos <- position
+  reservedOp "+"
+  pure \left -> AddExpr left opPos
+
+-- Expr = AddExpr
+parseExpr :: SturnParser Expr
+parseExpr = parseAddExpr
 
 -- ReturnStmt = "return" Expr ";"
 parseReturnStmt :: SturnParser Stmt
