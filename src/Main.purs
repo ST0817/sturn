@@ -1,4 +1,4 @@
-module Main (main, parseAndEvaluate) where
+module Main (main, parseAndExecute) where
 
 import Prelude
 
@@ -10,14 +10,14 @@ import Node.EventEmitter (on_)
 import Node.ReadLine (close, createConsoleInterface, lineH, noCompletion, prompt, setPrompt)
 import Parsing (ParseError, runParser)
 import Parsing.String (parseErrorHuman)
-import Sturn.Evaluation (evaluate)
-import Sturn.Parsing (parseIntLit)
+import Sturn.Execution (interpret)
+import Sturn.Parsing (parseReturnStmt)
 import Sturn.Value (Value)
 
-parseAndEvaluate :: String -> Either ParseError Value
-parseAndEvaluate code = do
-  expr <- runParser code parseIntLit
-  pure $ evaluate expr
+parseAndExecute :: String -> Either ParseError Value
+parseAndExecute code = do
+  stmt <- runParser code parseReturnStmt
+  pure $ interpret stmt
 
 main :: Effect Unit
 main = do
@@ -28,7 +28,7 @@ main = do
     ":quit" -> close interface
     "" -> prompt interface
     input -> do
-      case parseAndEvaluate input of
+      case parseAndExecute input of
         Right value -> logShow value
         Left err -> error $ joinWith "\n"
           $ parseErrorHuman input 20 err
