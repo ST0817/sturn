@@ -7,7 +7,9 @@ data Expr
   | StrLit String
   | NullLit
   | VarExpr Position String
+  | FuncExpr (Array String) (Array Stmt)
   | AddExpr Expr Position Expr
+  | CallExpr Expr Position (Array Expr)
 
 data Stmt
   = ReturnStmt Expr

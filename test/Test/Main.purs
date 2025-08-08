@@ -3,12 +3,11 @@ module Test.Main where
 import Prelude
 
 import Data.Either (Either(..))
-import Data.Map (empty)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import Effect.Ref (new)
 import Main (parseAndExecute)
+import Sturn.Scope (newScope)
 import Sturn.Value (Value(..))
 import Test.Spec (it)
 import Test.Spec.Assertions (shouldEqual)
@@ -17,8 +16,8 @@ import Test.Spec.Runner.Node (runSpecAndExitProcess)
 
 test :: String -> Value -> Aff Unit
 test code expected = do
-  envRef <- liftEffect $ new empty
-  result <- liftEffect $ parseAndExecute envRef code
+  scope <- liftEffect $ newScope
+  result <- liftEffect $ parseAndExecute scope code
   shouldEqual result $ Left expected
 
 main :: Effect Unit
@@ -44,3 +43,12 @@ main = runSpecAndExitProcess [ consoleReporter ] do
 
   it "addition" do
     test "return 42 + 53;" $ IntVal 95
+
+  it "function" do
+    let
+      code =
+        """
+        var incr = \n -> n + 1;
+        return incr(21);
+        """
+    test code $ IntVal 22

@@ -2,6 +2,8 @@ module Sturn.Parsing (parseProgram) where
 
 import Prelude
 
+import Control.Lazy (defer)
+import Data.Array (foldl, fromFoldable, singleton)
 import Parsing (Parser, position)
 import Parsing.Combinators (chainl1, choice)
 import Parsing.Combinators.Array (many)
@@ -22,6 +24,12 @@ tokenParser =
       , reservedNames =
           [ "return"
           , "var"
+          ]
+      , reservedOpNames =
+          [ "="
+          , "+"
+          , "\\"
+          , "->"
           ]
       }
   in
@@ -58,40 +66,64 @@ parseVarExpr = VarExpr
   <$> position
   <*> ident
 
+-- FuncExpr = "\\" Ident* "->" ( "{" Stmt* "}" ) | Expr
+parseFuncExpr :: SturnParser Expr
+parseFuncExpr = FuncExpr
+  <$ reservedOp "\\"
+  <*> many ident
+  <* reservedOp "->"
+  <*> body
+  where
+  body = choice [ block, singleExpr ]
+  block = defer \_ -> tokenParser.braces $ many parseStmt
+  singleExpr = defer \_ -> singleton <$> ReturnStmt <$> parseExpr
+
 -- Term
 --   = IntLit
 --   | StrLit
 --   | NullLit
 --   | VarExpr
+--   | FuncExpr
 parseTerm :: SturnParser Expr
-parseTerm = choice
+parseTerm = defer \_ -> choice
   [ parseIntLit
   , parseStrLit
   , parseNullLit
   , parseVarExpr
+  , parseFuncExpr
   ]
 
 -- AddExpr = Term ( "+" Term )+
 parseAddExpr :: SturnParser Expr
-parseAddExpr = chainl1 parseTerm $ do
+parseAddExpr = defer \_ -> chainl1 parseTerm do
   opPos <- position
   reservedOp "+"
   pure \left -> AddExpr left opPos
 
--- Expr = AddExpr
+-- CallExpr = AddExpr "(" ( Expr ( "," Expr )* )? ")"
+parseCallExpr :: SturnParser Expr
+parseCallExpr = defer \_ -> do
+  firstCallee <- parseAddExpr
+  foldl (\callee func -> func callee) firstCallee <$> many do
+    parenStartPos <- position
+    args <- tokenParser.parens
+      $ fromFoldable <$> tokenParser.commaSep parseExpr
+    pure \callee -> CallExpr callee parenStartPos args
+
+-- Expr = CallExpr
 parseExpr :: SturnParser Expr
-parseExpr = parseAddExpr
+parseExpr = defer \_ -> parseCallExpr
 
 -- ReturnStmt = "return" Expr ";"
 parseReturnStmt :: SturnParser Stmt
-parseReturnStmt = ReturnStmt
+parseReturnStmt = defer \_ -> ReturnStmt
   <$ reserved "return"
   <*> parseExpr
   <* semi
 
 -- VarStmt = "var" Ident "=" Expr ";"
 parseVarStmt :: SturnParser Stmt
-parseVarStmt = VarStmt
+parseVarStmt = defer \_ -> VarStmt
   <$ reserved "var"
   <*> position
   <*> ident
@@ -101,7 +133,7 @@ parseVarStmt = VarStmt
 
 -- AssignStmt = Ident "=" Expr ";"
 parseAssignStmt :: SturnParser Stmt
-parseAssignStmt = AssignStmt
+parseAssignStmt = defer \_ -> AssignStmt
   <$> position
   <*> ident
   <* reservedOp "="
@@ -113,7 +145,7 @@ parseAssignStmt = AssignStmt
 --   | VarStmt
 --   | AssignStmt
 parseStmt :: SturnParser Stmt
-parseStmt = choice
+parseStmt = defer \_ -> choice
   [ parseReturnStmt
   , parseVarStmt
   , parseAssignStmt
