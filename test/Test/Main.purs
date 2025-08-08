@@ -3,8 +3,11 @@ module Test.Main where
 import Prelude
 
 import Data.Either (Either(..))
+import Data.Map (empty)
 import Effect (Effect)
 import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
+import Effect.Ref (new)
 import Main (parseAndExecute)
 import Sturn.Value (Value(..))
 import Test.Spec (it)
@@ -13,11 +16,10 @@ import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner.Node (runSpecAndExitProcess)
 
 test :: String -> Value -> Aff Unit
-test code expected =
-  let
-    result = parseAndExecute code
-  in
-    shouldEqual result $ Right expected
+test code expected = do
+  envRef <- liftEffect $ new empty
+  result <- liftEffect $ parseAndExecute envRef code
+  shouldEqual result $ Left expected
 
 main :: Effect Unit
 main = runSpecAndExitProcess [ consoleReporter ] do
@@ -29,3 +31,13 @@ main = runSpecAndExitProcess [ consoleReporter ] do
 
   it "null literal" do
     test "return null;" NullVal
+
+  it "variable" do
+    let
+      code =
+        """
+        var foo = 42;
+        foo = 53;
+        return foo;
+        """
+    test code $ IntVal 53
