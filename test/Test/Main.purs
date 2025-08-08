@@ -26,3 +26,6 @@ main = runSpecAndExitProcess [ consoleReporter ] do
 
   it "string literal" do
     test "return \"foo\";" $ StrVal "foo"
+
+  it "null literal" do
+    test "return null;" NullVal
