@@ -3,6 +3,7 @@ module Sturn.Parsing (parseReturnStmt) where
 import Prelude
 
 import Parsing (Parser)
+import Parsing.Combinators (choice)
 import Parsing.Language (emptyDef)
 import Parsing.Token (TokenParser, makeTokenParser)
 import Sturn.Ast (Expr(..), Stmt(..))
@@ -16,9 +17,22 @@ tokenParser = makeTokenParser emptyDef
 parseIntLit :: SturnParser Expr
 parseIntLit = IntLit <$> tokenParser.integer
 
--- ReturnStmt = "return" IntLit ";"
+-- StrLit = "\"" .* "\""
+parseStrLit :: SturnParser Expr
+parseStrLit = StrLit <$> tokenParser.stringLiteral
+
+-- Expr
+--   = IntLit
+--   | StrLit
+parseExpr :: SturnParser Expr
+parseExpr = choice
+  [ parseIntLit
+  , parseStrLit
+  ]
+
+-- ReturnStmt = "return" Expr ";"
 parseReturnStmt :: SturnParser Stmt
 parseReturnStmt = ReturnStmt
   <$ tokenParser.reserved "return"
-  <*> parseIntLit
+  <*> parseExpr
   <* tokenParser.semi

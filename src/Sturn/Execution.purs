@@ -5,6 +5,7 @@ import Sturn.Value (Value(..))
 
 evaluate :: Expr -> Value
 evaluate (IntLit int) = IntVal int
+evaluate (StrLit str) = StrVal str
 
 interpret :: Stmt -> Value
 interpret (ReturnStmt expr) = evaluate expr
