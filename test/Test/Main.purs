@@ -8,7 +8,7 @@ import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Main (parseAndExecute)
 import Sturn.Scope (newScope)
-import Sturn.Value (Value(..))
+import Sturn.Type (Value(..))
 import Test.Spec (it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
@@ -56,3 +56,21 @@ main = runSpecAndExitProcess [ consoleReporter ] do
   it "tuple" do
     test "return (42, \"Hello\");"
       $ TupleVal [ IntVal 42, StrVal "Hello" ]
+
+  it "closure" do
+    let
+      code =
+        """
+        var createCounter = \ -> {
+            var count = 0;
+            return \ -> {
+                count = count + 1;
+                return count;
+            };
+        };
+        var counter = createCounter();
+        counter();
+        counter();
+        return counter();
+        """
+    test code $ IntVal 3

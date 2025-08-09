@@ -15,8 +15,8 @@ import Parsing (runParser)
 import Parsing.String (parseErrorHuman)
 import Sturn.Execution (interpret)
 import Sturn.Parsing (parseProgram)
-import Sturn.Scope (Scope, newScope)
-import Sturn.Value (Value)
+import Sturn.Scope (newScope)
+import Sturn.Type (Scope, Value)
 
 parseAndExecute :: Scope -> String -> Effect (Either Value Unit)
 parseAndExecute scope code = do

@@ -1,24 +1,15 @@
 module Sturn.Scope
-  ( EnvRef
-  , Scope(..)
-  , extendScope
+  ( extendScope
   , newScope
   ) where
 
 import Prelude
 
-import Data.Map (Map, empty)
+import Data.Map (empty)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Ref (Ref, new)
-import Sturn.Value (Value)
-
-type EnvRef = Ref (Map String Value)
-
-newtype Scope = Scope
-  { envRef :: EnvRef
-  , maybeOuter :: Maybe Scope
-  }
+import Effect.Ref (new)
+import Sturn.Type (Scope(..))
 
 newScope :: Effect Scope
 newScope = do

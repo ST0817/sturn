@@ -5,12 +5,12 @@ import Prelude
 import Control.Lazy (defer)
 import Data.Array (foldl, fromFoldable, singleton)
 import Parsing (Parser, position)
-import Parsing.Combinators (chainl1, choice)
+import Parsing.Combinators (chainl1, choice, try)
 import Parsing.Combinators.Array (many)
 import Parsing.Language (emptyDef)
 import Parsing.String (eof)
 import Parsing.Token (GenLanguageDef(..), TokenParser, alphaNum, letter, makeTokenParser)
-import Sturn.Ast (Expr(..), Stmt(..))
+import Sturn.Type (Expr(..), Stmt(..))
 
 type SturnParser = Parser String
 
@@ -98,12 +98,12 @@ parseTupleExpr = defer \_ -> TupleExpr
 --   | TupleExpr
 parseTerm :: SturnParser Expr
 parseTerm = defer \_ -> choice
-  [ parseIntLit
-  , parseStrLit
-  , parseNullLit
-  , parseVarExpr
-  , parseFuncExpr
-  , parseTupleExpr
+  [ try parseIntLit
+  , try parseStrLit
+  , try parseNullLit
+  , try parseVarExpr
+  , try parseFuncExpr
+  , try parseTupleExpr
   ]
 
 -- AddExpr = Term ( "+" Term )+
@@ -153,15 +153,22 @@ parseAssignStmt = defer \_ -> AssignStmt
   <*> parseExpr
   <* semi
 
+-- ExprStmt = Expr ";"
+parseExprStmt :: SturnParser Stmt
+parseExprStmt = defer \_ -> ExprStmt
+  <$> parseExpr
+  <* semi
+
 -- Stmt
 --   = ReturnStmt
 --   | VarStmt
 --   | AssignStmt
 parseStmt :: SturnParser Stmt
 parseStmt = defer \_ -> choice
-  [ parseReturnStmt
-  , parseVarStmt
-  , parseAssignStmt
+  [ try parseReturnStmt
+  , try parseVarStmt
+  , try parseAssignStmt
+  , try parseExprStmt
   ]
 
 -- Program = Stmt* EOF
